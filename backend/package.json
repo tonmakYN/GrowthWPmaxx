@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Backend server for the Growth AI platform.",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "postinstall": "prisma generate"
-  },
+ "scripts": {
+  "start": "npx prisma generate && node server.js",
+  "postinstall": "prisma generate"
+},
   "dependencies": {
     "@prisma/client": "^6.15.0",
     "bcryptjs": "^3.0.2",
