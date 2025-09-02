@@ -1,5 +1,141 @@
-body { font-family: sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 0; }
-header { background-color: #6a1b9a; color: white; padding: 1rem; text-align: center; }
-main { padding: 2rem; max-width: 800px; margin: 0 auto; }
-#data-container { background-color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-footer { background-color: #333; color: white; text-align: center; padding: 1rem; margin-top: auto; }
+/* --- Google Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
+
+/* --- Global Styles & Resets --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+  background-color: #f8fafc; /* Slate 50 - สีเทาอ่อน */
+  color: #334155; /* Slate 700 - สีเทาเข้ม */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* --- Main Container / The Card --- */
+main {
+  width: 100%;
+  max-width: 400px;
+  background-color: white;
+  padding: 2.5rem;
+  border-radius: 1.5rem; /* มุมโค้งมนมากขึ้น */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 5px 10px rgba(0, 0, 0, 0.02);
+  border: 1px solid #e2e8f0; /* Slate 200 */
+}
+
+/* --- Form Elements Styling --- */
+h2 {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b; /* Slate 800 */
+  margin-bottom: 2rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem; /* ระยะห่างระหว่างช่องกรอก */
+}
+
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  border: 1px solid #cbd5e1; /* Slate 300 */
+  border-radius: 0.75rem;
+  background-color: #f8fafc; /* Slate 50 */
+  transition: all 0.2s ease-in-out;
+}
+
+input[type="email"]:focus,
+input[type="password"]:focus {
+  outline: none;
+  border-color: #6d28d9; /* Violet 700 */
+  box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.1);
+  background-color: white;
+}
+
+button {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  background-color: #6d28d9; /* Violet 700 */
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 10px rgba(109, 40, 217, 0.2);
+}
+
+button:hover {
+  background-color: #5b21b6; /* Violet 800 */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(109, 40, 217, 0.3);
+}
+
+/* --- Links and Messages --- */
+p {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  min-height: 1.25rem; /* ป้องกัน layout ขยับ */
+}
+
+a {
+  color: #6d28d9; /* Violet 700 */
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: #5b21b6; /* Violet 800 */
+}
+
+#signup-message,
+#login-message {
+  font-weight: 500;
+}
+
+/* --- Dashboard Styling --- */
+#dashboard {
+  text-align: center;
+}
+
+#dashboard h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+#dashboard #user-info {
+  color: #64748b; /* Slate 500 */
+  margin-bottom: 2rem;
+}
+
+#logout-button {
+  background-color: #e2e8f0; /* Slate 200 */
+  color: #475569; /* Slate 600 */
+  box-shadow: none;
+}
+
+#logout-button:hover {
+  background-color: #cbd5e1; /* Slate 300 */
+  transform: translateY(0); /* ไม่ต้องขยับ */
+  box-shadow: none;
+}
