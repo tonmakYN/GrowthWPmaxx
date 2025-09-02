@@ -1,4 +1,4 @@
-const backendUrl = 'http://localhost:3000'; // URL ของ Backend
+const backendUrl = 'https://growthwpmaxx-backend.onrender.com'; // URL ของ Backend
 
 // DOM Elements
 const signupContainer = document.getElementById('signup-container');

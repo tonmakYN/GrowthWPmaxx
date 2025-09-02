@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000; // สำหรับ Render
 // **สำคัญ:** ตั้งค่า CORS สำหรับตอน Deploy
 // const frontendURL = process.env.FRONTEND_URL || 'http://127.0.0.1:5500';
 // app.use(cors({ origin: frontendURL }));
-app.use(cors()); // สำหรับทดสอบบนเครื่อง local
+app.use(cors({ origin: 'https://mygrowthapp-frontend.onrender.com' }));
 app.use(express.json());
 
 // --- API Endpoints ---
