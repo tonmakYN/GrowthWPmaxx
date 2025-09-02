@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <title>Growth AI - Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main>
+        <div id="signup-container">
+            <h2>สมัครสมาชิก</h2>
+            <form id="signup-form">
+                <input type="email" id="signup-email" placeholder="อีเมล" required>
+                <input type="password" id="signup-password" placeholder="รหัสผ่าน" required>
+                <button type="submit">สมัคร</button>
+                <p id="signup-message"></p>
+            </form>
+            <a href="#" id="show-login">มีบัญชีแล้ว? เข้าสู่ระบบ</a>
+        </div>
+
+        <div id="login-container" style="display: none;">
+            <h2>เข้าสู่ระบบ</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="อีเมล" required>
+                <input type="password" id="login-password" placeholder="รหัสผ่าน" required>
+                <button type="submit">เข้าสู่ระบบ</button>
+                <p id="login-message"></p>
+            </form>
+            <a href="#" id="show-signup">ยังไม่มีบัญชี? สมัครใช้งาน</a>
+        </div>
+
+        <div id="dashboard" style="display: none;">
+            <h1>ยินดีต้อนรับ!</h1>
+            <p id="user-info"></p>
+            <button id="logout-button">ออกจากระบบ</button>
+        </div>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
