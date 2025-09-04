@@ -30,8 +30,8 @@ app.post('/api/register', async (req, res) => {
     }
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        await prisma.user.create({ data: { email, password: hashedPassword } });
-        res.status(201).json({ message: 'สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ' });
+        const newUser = await prisma.user.create({ data: { email, password: hashedPassword } });
+        res.status(201).json({ message: 'สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ', user: { id: newUser.id, email: newUser.email } });
     } catch (error) {
         if (error.code === 'P2002') {
             return res.status(409).json({ error: 'อีเมลนี้ถูกใช้งานแล้ว' });
@@ -135,11 +135,16 @@ app.use('/api/ai', createProxyMiddleware({
 }));
 
 // --- Serve Frontend Files & Handle SPA Routing ---
-// ทำให้เซิร์ฟเวอร์รู้จักและสามารถส่งไฟล์ในโฟลเดอร์ frontend ได้
+
+// **กฎพิเศษ:** ถ้ามีคนขอ /face-analysis ให้ส่งไฟล์ face-analysis.html ไปให้
+app.get('/face-analysis', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/face-analysis.html'));
+});
+
+// **กฎทั่วไป:** ทำให้เซิร์ฟเวอร์รู้จักและสามารถส่งไฟล์อื่นๆ ในโฟลเดอร์ frontend ได้ (เช่น .css, .js)
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// สำหรับ URL อื่นๆ ทั้งหมด ให้ส่งไฟล์ index.html กลับไปเสมอ
-// เพื่อให้การ routing ในหน้าเว็บ (เช่น /login, /profile) ทำงานได้
+// **กฎสุดท้าย:** สำหรับ URL อื่นๆ ทั้งหมด (เช่น /login, /profile) ให้ส่งไฟล์ index.html กลับไปเสมอ
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
@@ -148,3 +153,4 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Unified server is running on port ${PORT}`);
 });
+
