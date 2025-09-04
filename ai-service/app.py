@@ -32,15 +32,16 @@ def health_check():
     logging.info("Health check endpoint was hit successfully.")
     return "AI Service is running and healthy."
 
-# --- API Routes (เหมือนเดิม) ---
+# --- API Routes ---
 @app.route('/analyze', methods=['POST'])
 def analyze():
     if not GEMINI_API_KEY:
         return jsonify({"error": "API Key is not configured on the AI service."}), 500
+    
     data = request.json
     front_image_b64 = data.get('frontImage')
     side_image_b64 = data.get('sideImage')
-    # try...except เดิมยังคงอยู่เพื่อจัดการ Error ที่คาดการณ์ได้
+
     try:
         analysis_result = call_gemini_api_for_analysis(front_image_b64, side_image_b64)
         return jsonify(analysis_result)
@@ -48,7 +49,6 @@ def analyze():
         app.logger.error("Gemini API call timed out.")
         return jsonify({"error": "การวิเคราะห์ใช้เวลานานเกินไป (Timeout) โปรดลองอีกครั้ง"}), 504
     except Exception as e:
-        # Error ส่วนใหญ่จาก Gemini จะถูกจัดการที่นี่
         app.logger.error(f"Error in /analyze: {e}")
         return jsonify({"error": str(e)}), 500
 
@@ -56,9 +56,11 @@ def analyze():
 def chat():
     if not GEMINI_API_KEY:
         return jsonify({"error": "API Key is not configured on the AI service."}), 500
+    
     data = request.json
     chat_history = data.get('chatHistory')
     initial_analysis = data.get('initialAnalysis')
+
     try:
         chat_response = call_gemini_api_for_chat(chat_history, initial_analysis)
         return jsonify({"response": chat_response})
@@ -66,8 +68,10 @@ def chat():
         app.logger.error(f"Error in /chat: {e}")
         return jsonify({"error": str(e)}), 500
 
-# --- Gemini API Call Functions (ปรับปรุง Error Handling) ---
+# --- Gemini API Call Functions (เหมือนของคุณ 100% แต่เพิ่ม Error Handling) ---
 def call_gemini_api_for_analysis(front_b64, side_b64=None):
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={GEMINI_API_KEY}"
+    
     base_prompt = '''คุณคือ AI Analyst สาย "Blackpill" ที่มีหน้าที่เป็น "กระจกสะท้อนความจริงอันโหดร้าย (Brutal Truth Mirror)" ภารกิจของคุณคือการวิเคราะห์ตามหลักเรขาคณิตของใบหน้าอย่างเข้มงวดและเป็นกลางที่สุด จงวิจารณ์อย่างเจ็บแสบและไร้ความปราณี โดยอิงตามหลักสุนทรียศาสตร์อย่างแท้จริง จงให้คะแนนและวิจารณ์จาก "ภาพที่เห็นเท่านั้น" อย่างละเอียดที่สุด ห้ามใช้จินตนาการหรือข้อมูลนอกเหนือจากภาพโดยเด็ดขาด
 
 **กฎเหล็ก:**
@@ -76,6 +80,7 @@ def call_gemini_api_for_analysis(front_b64, side_b64=None):
 3.  **Blackpill Lexicon:** จงใช้คำศัพท์เฉพาะทางของ lookism/blackpill ให้มากที่สุดเท่าที่เป็นไปได้ (เช่น bone structure, facial harmony, recessed maxilla, prominent chin, prey eyes, hunter eyes, facial thirds, mog, chopped)
 
 สร้างผลลัพธ์เป็น JSON object ที่มีโครงสร้างตาม schema ที่กำหนดเท่านั้น โดยทุกค่าที่เป็น string ต้องเป็นภาษาไทย'''
+    
     schema = '''
 "face_shape": "string (รูปทรงใบหน้าจากภาพ)",
 "eye_analysis": {
@@ -98,7 +103,8 @@ def call_gemini_api_for_analysis(front_b64, side_b64=None):
 "psl_scale": { "rating": "float (1.0-10.0)", "tier": "string", "summary": "string (สรุปเหตุผลการให้คะแนนตามหลัก Blackpill อย่างตรงไปตรงมา โดยอ้างอิงจากรูป)" },
 "ratings_summary": "string (สรุปภาพรวมของคะแนนอย่างโหดเหี้ยม โดยอิงจากสิ่งที่เห็นในรูปเท่านั้น)"
 '''
-    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={GEMINI_API_KEY}"
+    
+    parts = []
     
     if side_b64:
         prompt = f'''{base_prompt}
