@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 const frontendURL = "https://growthwpmaxx-backend.onrender.com"; 
 
 // URL ภายในสำหรับเรียกใช้ AI Service (ดึงจาก Environment Variables)
-const aiServiceURL = "https://growthwpmaxx-ai-service.onrender.com";
+const aiServiceURL = process.env.AI_SERVICE_URL;
 
 // --- Middleware ---
 app.use(cors({ origin: frontendURL }));
