@@ -1,68 +1,59 @@
 import os
 import json
 import requests
-from flask import Flask, request, jsonify
 import logging
+from flask import Flask, request, jsonify
 
-# --- Configuration ---
+# --- Configuration & Critical Checks ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+if GEMINI_API_KEY and len(GEMINI_API_KEY) > 10:
+    logging.info("SUCCESS: GEMINI_API_KEY loaded successfully.")
+else:
+    logging.error("FATAL ERROR: GEMINI_API_KEY environment variable is NOT SET or is empty. Please check Render settings.")
 
 app = Flask(__name__)
-# ตั้งค่า Logging เพื่อให้เราดู Log บน Render ได้
-logging.basicConfig(level=logging.INFO)
 
-# --- API Routes ---
-# Route นี้จะถูกเรียกจาก Backend หลัก (Node.js)
+# --- Health Check Route ---
+# หน้าสำหรับตรวจสอบว่า Service ทำงานหรือไม่
+@app.route("/")
+def health_check():
+    logging.info("Health check endpoint was hit successfully.")
+    return "AI Service is running and healthy."
+
+# --- API Routes (เหมือนเดิม) ---
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    # ตรวจสอบว่ามี API Key หรือไม่
     if not GEMINI_API_KEY:
-        app.logger.error("GEMINI_API_KEY is not configured.")
         return jsonify({"error": "API Key is not configured on the AI service."}), 500
-
-    # รับข้อมูลรูปภาพจาก request
     data = request.json
     front_image_b64 = data.get('frontImage')
     side_image_b64 = data.get('sideImage')
-
-    # เรียกใช้ฟังก์ชันวิเคราะห์ของ Gemini
     try:
         analysis_result = call_gemini_api_for_analysis(front_image_b64, side_image_b64)
-        # ส่งผลลัพธ์กลับไปเป็น JSON
         return jsonify(analysis_result)
-    except requests.exceptions.Timeout:
-        app.logger.error("Gemini API call timed out.")
-        return jsonify({"error": "การวิเคราะห์ใช้เวลานานเกินไป (Timeout) โปรดลองอีกครั้ง"}), 504
     except Exception as e:
-        app.logger.error(f"Error during Gemini analysis: {e}")
+        app.logger.error(f"Error in /analyze: {e}")
         return jsonify({"error": str(e)}), 500
 
-# Route นี้จะถูกเรียกจาก Backend หลัก (Node.js)
 @app.route('/chat', methods=['POST'])
 def chat():
     if not GEMINI_API_KEY:
-        app.logger.error("GEMINI_API_KEY is not configured.")
         return jsonify({"error": "API Key is not configured on the AI service."}), 500
-    
     data = request.json
     chat_history = data.get('chatHistory')
     initial_analysis = data.get('initialAnalysis')
-
     try:
         chat_response = call_gemini_api_for_chat(chat_history, initial_analysis)
         return jsonify({"response": chat_response})
-    except requests.exceptions.Timeout:
-        app.logger.error("Gemini Chat API call timed out.")
-        return jsonify({"error": "การเชื่อมต่อ AI Chat ใช้เวลานานเกินไป (Timeout) โปรดลองอีกครั้ง"}), 504
     except Exception as e:
-        app.logger.error(f"Error during Gemini chat: {e}")
+        app.logger.error(f"Error in /chat: {e}")
         return jsonify({"error": str(e)}), 500
 
-# --- Gemini API Call Functions (เหมือนของคุณ + เพิ่มการจัดการ Error) ---
-
+# --- Gemini API Call Functions (ปรับปรุง Error Handling) ---
 def call_gemini_api_for_analysis(front_b64, side_b64=None):
-    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={GEMINI_API_KEY}"
-    
+    # (คัดลอก Prompt และ Schema เดิมของคุณมาทั้งหมด)
     base_prompt = '''คุณคือ AI Analyst สาย "Blackpill" ที่มีหน้าที่เป็น "กระจกสะท้อนความจริงอันโหดร้าย (Brutal Truth Mirror)" ภารกิจของคุณคือการวิเคราะห์ตามหลักเรขาคณิตของใบหน้าอย่างเข้มงวดและเป็นกลางที่สุด จงวิจารณ์อย่างเจ็บแสบและไร้ความปราณี โดยอิงตามหลักสุนทรียศาสตร์อย่างแท้จริง จงให้คะแนนและวิจารณ์จาก "ภาพที่เห็นเท่านั้น" อย่างละเอียดที่สุด ห้ามใช้จินตนาการหรือข้อมูลนอกเหนือจากภาพโดยเด็ดขาด
 
 **กฎเหล็ก:**
@@ -71,7 +62,6 @@ def call_gemini_api_for_analysis(front_b64, side_b64=None):
 3.  **Blackpill Lexicon:** จงใช้คำศัพท์เฉพาะทางของ lookism/blackpill ให้มากที่สุดเท่าที่เป็นไปได้ (เช่น bone structure, facial harmony, recessed maxilla, prominent chin, prey eyes, hunter eyes, facial thirds, mog, chopped)
 
 สร้างผลลัพธ์เป็น JSON object ที่มีโครงสร้างตาม schema ที่กำหนดเท่านั้น โดยทุกค่าที่เป็น string ต้องเป็นภาษาไทย'''
-
     schema = '''
 "face_shape": "string (รูปทรงใบหน้าจากภาพ)",
 "eye_analysis": {
@@ -94,8 +84,8 @@ def call_gemini_api_for_analysis(front_b64, side_b64=None):
 "psl_scale": { "rating": "float (1.0-10.0)", "tier": "string", "summary": "string (สรุปเหตุผลการให้คะแนนตามหลัก Blackpill อย่างตรงไปตรงมา โดยอ้างอิงจากรูป)" },
 "ratings_summary": "string (สรุปภาพรวมของคะแนนอย่างโหดเหี้ยม โดยอ้างอิงจากสิ่งที่เห็นในรูปเท่านั้น)"
 '''
-    
-    parts = []
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={GEMINI_API_KEY}"
+    # ... (ส่วน Logic การสร้าง parts และ payload เหมือนเดิม)
     
     if side_b64:
         prompt = f'''{base_prompt}
@@ -132,19 +122,11 @@ Schema: {{
 
     payload = {"contents": [{"parts": parts}], "generationConfig": {"responseMimeType": "application/json"}}
     response = requests.post(api_url, json=payload, timeout=29)
-    
-    # --- **การเปลี่ยนแปลงที่สำคัญ** ---
-    # ตรวจสอบว่า Gemini ตอบกลับมาสำเร็จหรือไม่
+
     if response.status_code != 200:
-        try:
-            # พยายามดึงข้อความ Error ที่แท้จริงจาก Gemini
-            error_details = response.json()
-            error_message = error_details.get("error", {}).get("message", response.text)
-        except json.JSONDecodeError:
-            error_message = response.text
-        # ส่ง Error ที่แท้จริงกลับไป
-        raise Exception(f"Gemini API Error: {error_message}")
-    # --- จบการเปลี่ยนแปลง ---
+        error_message = f"Gemini API returned status {response.status_code}: {response.text}"
+        logging.error(error_message)
+        raise Exception(error_message)
 
     result_json = response.json()
     json_text = result_json['candidates'][0]['content']['parts'][0]['text']
@@ -152,7 +134,7 @@ Schema: {{
 
 def call_gemini_api_for_chat(chat_history, initial_analysis):
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
-
+    # ... (system_instruction และ payload เดิมของคุณ)
     system_instruction = {
         "parts": [{"text": f"""คุณคือ AI Lookmaxxing Advisor ที่มีความรู้แบบ Blackpill กำลังสนทนากับผู้ใช้
         ข้อมูลการวิเคราะห์ใบหน้าของผู้ใช้อยู่ด้านล่างในรูปแบบ JSON:
@@ -164,16 +146,11 @@ def call_gemini_api_for_chat(chat_history, initial_analysis):
 
     payload = {"contents": chat_history, "systemInstruction": system_instruction}
     response = requests.post(api_url, json=payload, timeout=29)
-    
-    # --- **การเปลี่ยนแปลงที่สำคัญ** ---
+
     if response.status_code != 200:
-        try:
-            error_details = response.json()
-            error_message = error_details.get("error", {}).get("message", response.text)
-        except json.JSONDecodeError:
-            error_message = response.text
-        raise Exception(f"Gemini API Error: {error_message}")
-    # --- จบการเปลี่ยนแปลง ---
+        error_message = f"Gemini Chat API returned status {response.status_code}: {response.text}"
+        logging.error(error_message)
+        raise Exception(error_message)
         
     result_json = response.json()
     return result_json['candidates'][0]['content']['parts'][0]['text']
