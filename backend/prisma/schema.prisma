@@ -14,8 +14,11 @@ datasource db {
 }
 
 model User {
-  id       Int      @id @default(autoincrement())
-  email    String   @unique
-  password String
-  createdAt DateTime @default(now())
+  id                  Int       @id @default(autoincrement())
+  email               String    @unique
+  password            String
+  displayName         String?
+  passwordResetToken  String?   @unique // <--- เพิ่ม: สำหรับเก็บโทเค็น
+  passwordResetAt     DateTime? // <--- เพิ่ม: สำหรับเก็บวันหมดอายุของโทเค็น
+  createdAt           DateTime  @default(now())
 }

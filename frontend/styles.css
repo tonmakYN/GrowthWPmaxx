@@ -1,226 +1,34 @@
-/* Custom Styles - Dark Blue/Cyan Theme */
-@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
-
-body {
-    font-family: 'Kanit', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #1a202c; /* Dark Blue Gray */
-    color: #e2e8f0; /* Light Gray Text */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    overflow-y: auto; /* Enable scrolling for smaller screens */
-    box-sizing: border-box;
+/* --- Custom Styles --- */
+.bg-grid {
+    background-color: #0f172a; /* bg-slate-900 */
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 2rem 2rem;
+    animation: pan 180s linear infinite;
 }
 
-main {
-    width: 100%;
-    max-width: 480px;
-    padding: 2.5rem 1.5rem;
-    background-color: #2d3748; /* Slightly lighter dark blue */
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 5px rgba(0, 0, 0, 0.2);
-    text-align: center;
-    box-sizing: border-box;
-    margin: 1rem; /* Add margin for spacing on all sides */
-}
-
-h2 {
-    color: #4dc0b5; /* Cyan for headings */
-    font-size: 2.5rem;
-    margin-bottom: 2rem;
-    font-weight: 700;
-}
-
-h1 {
-    color: #4dc0b5; /* Cyan for headings */
-    font-size: 3rem;
-    margin-bottom: 2rem;
-    font-weight: 700;
-}
-
-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-input[type="email"],
-input[type="password"] {
-    width: 100%;
-    padding: 1rem 1.2rem;
-    border: 1px solid #4a5568; /* Darker border */
-    border-radius: 8px;
-    background-color: #212833; /* Even darker input background */
-    color: #e2e8f0;
-    font-size: 1rem;
-    box-sizing: border-box;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-input[type="email"]::placeholder,
-input[type="password"]::placeholder {
-    color: #a0aec0; /* Light gray placeholder */
-}
-
-input[type="email"]:focus,
-input[type="password"]:focus {
-    border-color: #4dc0b5; /* Cyan focus border */
-    box-shadow: 0 0 0 3px rgba(77, 192, 181, 0.4); /* Cyan glow */
-    outline: none;
-}
-
-button {
-    width: 100%;
-    padding: 1rem 1.5rem;
-    background-color: #4dc0b5; /* Cyan button */
-    color: #1a202c; /* Dark text on button */
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.2s;
-    margin-top: 0.5rem;
-}
-
-button:hover {
-    background-color: #38b2ac; /* Slightly darker cyan on hover */
-    transform: translateY(-2px);
-}
-
-button:active {
-    transform: translateY(0);
-}
-
-a {
-    color: #63b3ed; /* Lighter blue for links */
-    text-decoration: none;
-    margin-top: 1.5rem;
-    display: inline-block;
-    font-weight: 500;
-    transition: color 0.2s;
-}
-
-a:hover {
-    color: #4299e1; /* Even lighter blue on hover */
-    text-decoration: underline;
-}
-
-p {
-    margin-top: 1rem;
-    font-size: 0.95rem;
-    color: #a0aec0;
+@keyframes pan {
+    from { background-position: 0 0; }
+    to { background-position: -800% 800%; }
 }
 
 .message {
-    margin-top: 1rem;
+    display: none;
     padding: 0.75rem 1rem;
-    border-radius: 8px;
-    font-size: 0.95rem;
+    border-radius: 0.5rem;
     font-weight: 500;
 }
-
 .message.success {
-    background-color: #2f855a; /* Green for success */
-    color: #c6f6d5;
+    background-color: #166534; /* green-800 */
+    color: #dcfce7; /* green-100 */
 }
-
 .message.error {
-    background-color: #c53030; /* Red for error */
-    color: #fed7d7;
+    background-color: #991b1b; /* red-800 */
+    color: #fee2e2; /* red-100 */
+}
+.message.info {
+    background-color: #1e40af; /* blue-800 */
+    color: #dbeafe; /* blue-100 */
 }
 
-/* Dashboard Specific Styles */
-#dashboard {
-    padding: 2rem;
-}
-
-#dashboard h1 {
-    font-size: 3rem;
-    margin-bottom: 1.5rem;
-}
-
-#dashboard p {
-    font-size: 1.2rem;
-    margin-bottom: 2rem;
-    color: #cbd5e0;
-}
-
-#feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1.5rem;
-    margin-top: 2rem;
-}
-
-.feature-card {
-    background-color: #212833;
-    padding: 1.5rem;
-    border-radius: 10px;
-    text-align: center;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s, box-shadow 0.2s;
-    cursor: pointer;
-    border: 1px solid transparent; /* default border */
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-    border-color: #4dc0b5; /* Cyan border on hover */
-}
-
-.feature-card-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    color: #63b3ed; /* Light blue for icons */
-}
-
-.feature-card h3 {
-    font-size: 1.25rem;
-    color: #4dc0b5; /* Cyan for feature titles */
-    margin-bottom: 0.5rem;
-}
-
-.feature-card p {
-    font-size: 0.9rem;
-    color: #a0aec0;
-    line-height: 1.4;
-}
-
-#logout-button {
-    background-color: #ef4444; /* Red for logout button */
-    color: #fff;
-    margin-top: 3rem;
-}
-
-#logout-button:hover {
-    background-color: #dc2626; /* Darker red on hover */
-}
-
-/* Responsive Adjustments */
-@media (max-width: 600px) {
-    main {
-        padding: 2rem 1rem;
-        margin: 0.5rem;
-    }
-    h2 {
-        font-size: 2rem;
-        margin-bottom: 1.5rem;
-    }
-    h1 {
-        font-size: 2.5rem;
-    }
-    .feature-card {
-        padding: 1.2rem;
-    }
-    .feature-card-icon {
-        font-size: 2.5rem;
-    }
-    .feature-card h3 {
-        font-size: 1.1rem;
-    }
-}
