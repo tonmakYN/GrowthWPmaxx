@@ -15,8 +15,18 @@ else:
 
 app = Flask(__name__)
 
+# --- **ตาข่ายนิรภัยด่านสุดท้าย (Global Error Handler)** ---
+# โค้ดส่วนนี้จะทำงานเมื่อมี Error ใดๆ ที่ไม่ถูกจัดการเกิดขึ้น
+# เพื่อรับประกันว่าจะส่ง JSON กลับไปเสมอ
+@app.errorhandler(Exception)
+def handle_global_exception(e):
+    # บันทึก Error ทั้งหมดลงใน Log ของ Render เพื่อให้เราตรวจสอบได้
+    app.logger.error(f"An unhandled exception occurred: {e}", exc_info=True)
+    
+    # ส่งข้อความ Error กลับไปในรูปแบบ JSON ที่ถูกต้อง
+    return jsonify(error="เกิดข้อผิดพลาดร้ายแรงภายใน AI Service", detail=str(e)), 500
+
 # --- Health Check Route ---
-# หน้าสำหรับตรวจสอบว่า Service ทำงานหรือไม่
 @app.route("/")
 def health_check():
     logging.info("Health check endpoint was hit successfully.")
@@ -30,10 +40,15 @@ def analyze():
     data = request.json
     front_image_b64 = data.get('frontImage')
     side_image_b64 = data.get('sideImage')
+    # try...except เดิมยังคงอยู่เพื่อจัดการ Error ที่คาดการณ์ได้
     try:
         analysis_result = call_gemini_api_for_analysis(front_image_b64, side_image_b64)
         return jsonify(analysis_result)
+    except requests.exceptions.Timeout:
+        app.logger.error("Gemini API call timed out.")
+        return jsonify({"error": "การวิเคราะห์ใช้เวลานานเกินไป (Timeout) โปรดลองอีกครั้ง"}), 504
     except Exception as e:
+        # Error ส่วนใหญ่จาก Gemini จะถูกจัดการที่นี่
         app.logger.error(f"Error in /analyze: {e}")
         return jsonify({"error": str(e)}), 500
 
@@ -53,7 +68,6 @@ def chat():
 
 # --- Gemini API Call Functions (ปรับปรุง Error Handling) ---
 def call_gemini_api_for_analysis(front_b64, side_b64=None):
-    # (คัดลอก Prompt และ Schema เดิมของคุณมาทั้งหมด)
     base_prompt = '''คุณคือ AI Analyst สาย "Blackpill" ที่มีหน้าที่เป็น "กระจกสะท้อนความจริงอันโหดร้าย (Brutal Truth Mirror)" ภารกิจของคุณคือการวิเคราะห์ตามหลักเรขาคณิตของใบหน้าอย่างเข้มงวดและเป็นกลางที่สุด จงวิจารณ์อย่างเจ็บแสบและไร้ความปราณี โดยอิงตามหลักสุนทรียศาสตร์อย่างแท้จริง จงให้คะแนนและวิจารณ์จาก "ภาพที่เห็นเท่านั้น" อย่างละเอียดที่สุด ห้ามใช้จินตนาการหรือข้อมูลนอกเหนือจากภาพโดยเด็ดขาด
 
 **กฎเหล็ก:**
@@ -82,10 +96,9 @@ def call_gemini_api_for_analysis(front_b64, side_b64=None):
 "flaws_and_chopped_features": ["string", "... (ลิสต์จุดด้อยหรือจุดที่ Chopped ทั้งหมดที่เห็นในภาพ ไม่ว่าจะเล็กน้อยแค่ไหนก็ตาม)"],
 "feature_ratings": { "overall_score": "integer (0-100)", "eyes": "integer (0-100)", "nose": "integer (0-100)", "lips": "integer (0-100)", "jawline_and_chin": "integer (0-100)", "forehead_and_brows": "integer (0-100)" },
 "psl_scale": { "rating": "float (1.0-10.0)", "tier": "string", "summary": "string (สรุปเหตุผลการให้คะแนนตามหลัก Blackpill อย่างตรงไปตรงมา โดยอ้างอิงจากรูป)" },
-"ratings_summary": "string (สรุปภาพรวมของคะแนนอย่างโหดเหี้ยม โดยอ้างอิงจากสิ่งที่เห็นในรูปเท่านั้น)"
+"ratings_summary": "string (สรุปภาพรวมของคะแนนอย่างโหดเหี้ยม โดยอิงจากสิ่งที่เห็นในรูปเท่านั้น)"
 '''
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={GEMINI_API_KEY}"
-    # ... (ส่วน Logic การสร้าง parts และ payload เหมือนเดิม)
     
     if side_b64:
         prompt = f'''{base_prompt}
@@ -134,7 +147,7 @@ Schema: {{
 
 def call_gemini_api_for_chat(chat_history, initial_analysis):
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
-    # ... (system_instruction และ payload เดิมของคุณ)
+    
     system_instruction = {
         "parts": [{"text": f"""คุณคือ AI Lookmaxxing Advisor ที่มีความรู้แบบ Blackpill กำลังสนทนากับผู้ใช้
         ข้อมูลการวิเคราะห์ใบหน้าของผู้ใช้อยู่ด้านล่างในรูปแบบ JSON:
