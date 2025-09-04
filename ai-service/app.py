@@ -1,14 +1,12 @@
-import json
 import os
+import json
 import requests
-import logging
 from flask import Flask, request, jsonify
+import logging
 
 # --- Configuration ---
-# ดึง API Key จาก Environment Variables บน Render
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# ตั้งค่า Flask App
 app = Flask(__name__)
 # ตั้งค่า Logging เพื่อให้เราดู Log บน Render ได้
 logging.basicConfig(level=logging.INFO)
@@ -60,7 +58,7 @@ def chat():
         app.logger.error(f"Error during Gemini chat: {e}")
         return jsonify({"error": str(e)}), 500
 
-# --- Gemini API Call Functions (เหมือนของคุณ 100%) ---
+# --- Gemini API Call Functions (เหมือนของคุณ + เพิ่มการจัดการ Error) ---
 
 def call_gemini_api_for_analysis(front_b64, side_b64=None):
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={GEMINI_API_KEY}"
@@ -134,7 +132,20 @@ Schema: {{
 
     payload = {"contents": [{"parts": parts}], "generationConfig": {"responseMimeType": "application/json"}}
     response = requests.post(api_url, json=payload, timeout=29)
-    response.raise_for_status()
+    
+    # --- **การเปลี่ยนแปลงที่สำคัญ** ---
+    # ตรวจสอบว่า Gemini ตอบกลับมาสำเร็จหรือไม่
+    if response.status_code != 200:
+        try:
+            # พยายามดึงข้อความ Error ที่แท้จริงจาก Gemini
+            error_details = response.json()
+            error_message = error_details.get("error", {}).get("message", response.text)
+        except json.JSONDecodeError:
+            error_message = response.text
+        # ส่ง Error ที่แท้จริงกลับไป
+        raise Exception(f"Gemini API Error: {error_message}")
+    # --- จบการเปลี่ยนแปลง ---
+
     result_json = response.json()
     json_text = result_json['candidates'][0]['content']['parts'][0]['text']
     return json.loads(json_text)
@@ -153,7 +164,17 @@ def call_gemini_api_for_chat(chat_history, initial_analysis):
 
     payload = {"contents": chat_history, "systemInstruction": system_instruction}
     response = requests.post(api_url, json=payload, timeout=29)
-    response.raise_for_status()
+    
+    # --- **การเปลี่ยนแปลงที่สำคัญ** ---
+    if response.status_code != 200:
+        try:
+            error_details = response.json()
+            error_message = error_details.get("error", {}).get("message", response.text)
+        except json.JSONDecodeError:
+            error_message = response.text
+        raise Exception(f"Gemini API Error: {error_message}")
+    # --- จบการเปลี่ยนแปลง ---
+        
     result_json = response.json()
     return result_json['candidates'][0]['content']['parts'][0]['text']
 
