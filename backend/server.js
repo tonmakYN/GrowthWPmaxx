@@ -1,33 +1,28 @@
 const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const axios = require('axios');
-const { createProxyMiddleware } = require('http-proxy-middleware');
 
 // --- Initializations ---
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 // --- Configuration ---
-// **แก้ไขแล้ว:** URL ของ Frontend ตอนนี้ก็คือ URL ของ Backend Service เอง
-const frontendURL = "https://growthwpmaxx-backend.onrender.com"; 
-
-// URL ภายในสำหรับเรียกใช้ AI Service (ดึงจาก Environment Variables)
+const frontendURL = "https://growthwpmaxx-backend.onrender.com";
 const aiServiceURL = process.env.AI_SERVICE_URL;
 
 // --- Middleware ---
 app.use(cors({ origin: frontendURL }));
 app.use(express.json({ limit: '10mb' })); // รองรับการอัปโหลดรูปภาพขนาดใหญ่
 
-// --- Static File Serving (ส่วนที่ 1) ---
-// ทำให้เซิร์ฟเวอร์รู้จักและสามารถส่งไฟล์ในโฟลเดอร์ frontend ได้
-app.use(express.static(path.join(__dirname, '../frontend')));
-
 // --- API Routes for Users & Auth ---
+
 // API: สมัครสมาชิก
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
@@ -57,6 +52,26 @@ app.post('/api/login', async (req, res) => {
         res.status(200).json({ message: 'เข้าสู่ระบบสำเร็จ!', user: { id: user.id, email: user.email, displayName: user.displayName } });
     } catch (error) {
         res.status(500).json({ error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' });
+    }
+});
+
+// API: จัดการโปรไฟล์
+app.put('/api/profile', async (req, res) => {
+    const { email, displayName } = req.body;
+    if (!email) {
+        return res.status(400).json({ error: 'ไม่พบอีเมลผู้ใช้' });
+    }
+    try {
+        const updatedUser = await prisma.user.update({
+            where: { email },
+            data: { displayName },
+        });
+        res.status(200).json({
+            message: 'อัปเดตโปรไฟล์สำเร็จ!',
+            user: { id: updatedUser.id, email: updatedUser.email, displayName: updatedUser.displayName },
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'เกิดข้อผิดพลาดในการอัปเดตโปรไฟล์' });
     }
 });
 
@@ -108,12 +123,11 @@ app.post('/api/reset-password', async (req, res) => {
 
 // --- Reverse Proxy for AI Service ---
 // ทำหน้าที่เป็น "ประตู" ส่งต่อคำขอไปยังแผนก AI (Python)
-// คำขอทั้งหมดที่ขึ้นต้นด้วย /api/ai จะถูกส่งต่อไปยัง AI Service
 app.use('/api/ai', createProxyMiddleware({
     target: aiServiceURL,
     changeOrigin: true,
     pathRewrite: {
-        '^/api/ai': '', // ลบ /api/ai ออกจาก path ก่อนส่งต่อไป
+        '^/api/ai': '', // ลบ /api/ai ออกจาก path ก่อนส่งต่อไปยัง Python Service
     },
     onError: (err, req, res) => {
         console.error('Proxy Error:', err);
@@ -121,8 +135,10 @@ app.use('/api/ai', createProxyMiddleware({
     }
 }));
 
+// --- Serve Frontend Files & Handle SPA Routing ---
+// ทำให้เซิร์ฟเวอร์รู้จักและสามารถส่งไฟล์ในโฟลเดอร์ frontend ได้
+app.use(express.static(path.join(__dirname, '../frontend')));
 
-// --- Catch-all Route for Frontend (ส่วนที่ 2) ---
 // สำหรับ URL อื่นๆ ทั้งหมด ให้ส่งไฟล์ index.html กลับไปเสมอ
 // เพื่อให้การ routing ในหน้าเว็บ (เช่น /login, /profile) ทำงานได้
 app.get('*', (req, res) => {
