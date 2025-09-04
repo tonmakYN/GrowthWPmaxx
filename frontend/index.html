@@ -1,36 +1,66 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <title>Growth AI - Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growth AI - ลงชื่อเข้าใช้ / สมัครสมาชิก</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <main>
-        <div id="signup-container">
+        <div id="signup-container" class="form-container">
             <h2>สมัครสมาชิก</h2>
             <form id="signup-form">
-                <input type="email" id="signup-email" placeholder="อีเมล" required>
-                <input type="password" id="signup-password" placeholder="รหัสผ่าน" required>
-                <button type="submit">สมัคร</button>
-                <p id="signup-message"></p>
+                <input type="email" id="signup-email" placeholder="อีเมลของคุณ" required>
+                <input type="password" id="signup-password" placeholder="รหัสผ่าน (ขั้นต่ำ 6 ตัวอักษร)" required minlength="6">
+                <button type="submit">สมัครใช้งาน</button>
+                <p id="signup-message" class="message"></p>
             </form>
-            <a href="#" id="show-login">มีบัญชีแล้ว? เข้าสู่ระบบ</a>
+            <a href="#" id="show-login">มีบัญชีอยู่แล้ว? เข้าสู่ระบบ</a>
         </div>
 
-        <div id="login-container" style="display: none;">
+        <div id="login-container" class="form-container" style="display: none;">
             <h2>เข้าสู่ระบบ</h2>
             <form id="login-form">
-                <input type="email" id="login-email" placeholder="อีเมล" required>
+                <input type="email" id="login-email" placeholder="อีเมลของคุณ" required>
                 <input type="password" id="login-password" placeholder="รหัสผ่าน" required>
                 <button type="submit">เข้าสู่ระบบ</button>
-                <p id="login-message"></p>
+                <p id="login-message" class="message"></p>
             </form>
-            <a href="#" id="show-signup">ยังไม่มีบัญชี? สมัครใช้งาน</a>
+            <a href="#" id="show-signup">ยังไม่มีบัญชี? สมัครใช้งานฟรี</a>
         </div>
 
         <div id="dashboard" style="display: none;">
-            <h1>ยินดีต้อนรับ!</h1>
-            <p id="user-info"></p>
+            <h1 id="welcome-message">ยินดีต้อนรับ!</h1>
+            <p>เลือกฟีเจอร์ AI ที่คุณต้องการใช้งาน:</p>
+
+            <div id="feature-grid">
+                <div class="feature-card" data-feature="face-analysis">
+                    <div class="feature-card-icon"><i class="fas fa-face-flushed"></i></div>
+                    <h3>วิเคราะห์ใบหน้า</h3>
+                    <p>วิเคราะห์โครงสร้างใบหน้า และแนะนำสไตล์ที่เหมาะกับคุณ</p>
+                </div>
+
+                <div class="feature-card" data-feature="style-recommendation">
+                    <div class="feature-card-icon"><i class="fas fa-tshirt"></i></div>
+                    <h3>แนะนำสไตล์การแต่งตัว</h3>
+                    <p>AI ช่วยคัดเลือกชุดที่เข้ากับรูปหน้าและรูปร่างของคุณ</p>
+                </div>
+
+                <div class="feature-card" data-feature="fitness-planner">
+                    <div class="feature-card-icon"><i class="fas fa-dumbbell"></i></div>
+                    <h3>วางแผนฟิตเนสส่วนตัว</h3>
+                    <p>สร้างตารางออกกำลังกายและอาหารตามเป้าหมายสุขภาพของคุณ</p>
+                </div>
+
+                <div class="feature-card" data-feature="skill-booster">
+                    <div class="feature-card-icon"><i class="fas fa-brain"></i></div>
+                    <h3>พัฒนาทักษะ</h3>
+                    <p>เครื่องมือ AI ช่วยฝึกฝนและพัฒนาทักษะใหม่ๆ ที่คุณสนใจ</p>
+                </div>
+
+                </div>
             <button id="logout-button">ออกจากระบบ</button>
         </div>
     </main>
