@@ -23,6 +23,9 @@
 </head>
 <body class="text-slate-300 min-h-screen p-4 md:p-8">
     <div class="container mx-auto max-w-7xl w-full">
+        <a href="/" class="absolute top-4 left-4 text-sky-400 hover:text-sky-200 transition z-10">
+            <i class="fas fa-arrow-left mr-2"></i> กลับหน้าหลัก
+        </a>
         <header class="text-center mb-10">
             <h1 class="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-blue-400 mb-2">
                 Lookmaxxing AI Suite
@@ -88,9 +91,9 @@
     </div>
     
     <script type="module">
-        // --- **สำคัญ:** แก้ไขให้เรียกใช้ Backend หลักของคุณ ---
-        const backendUrl = 'https://growthwpmaxx-backend.onrender.com';
-
+        // **แก้ไข 1:** เพิ่มตัวแปรนี้เพื่อใช้ relative path
+        const backendUrl = ''; 
+        
         // --- DOM Elements ---
         const imageUploadFront = document.getElementById('image-upload-front');
         const uploadButtonFront = document.getElementById('upload-button-front');
@@ -184,8 +187,8 @@
                 sideImage: sideImageData ? sideImageData.base64 : null
             };
 
-            // **สำคัญ:** แก้ไขให้เรียกใช้ API ผ่าน Backend หลักของคุณ
-            const response = await fetch(`${backendUrl}/api/analyze`, {
+            // **แก้ไข 2:** เปลี่ยน URL ให้ชี้ไปที่ Backend หลัก ผ่าน Proxy
+            const response = await fetch(`${backendUrl}/api/ai/analyze`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -269,9 +272,9 @@
                 chatHistory: chatHistory,
                 initialAnalysis: initialAnalysisJSON
             };
-
-            // **สำคัญ:** แก้ไขให้เรียกใช้ API ผ่าน Backend หลักของคุณ
-            const response = await fetch(`${backendUrl}/api/chat`, {
+            
+            // **แก้ไข 3:** เปลี่ยน URL ให้ชี้ไปที่ Backend หลัก ผ่าน Proxy
+            const response = await fetch(`${backendUrl}/api/ai/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -338,7 +341,7 @@
                                 <h4 class="font-bold text-green-400 mb-2">ทรงผมที่แนะนำ</h4>
                                 <ul class="space-y-3">${hairstyle.recommended_styles.map(s => `<li><p class="font-semibold">${s.name}</p><p class="text-sm text-slate-400">${s.reason}</p></li>`).join('')}</ul>
                             </div>
-                             <div>
+                            <div>
                                 <h4 class="font-bold text-yellow-400 mb-2">ทรงผมที่ควรหลีกเลี่ยง</h4>
                                 <ul class="list-disc list-inside space-y-1">${hairstyle.styles_to_avoid.map(s => `<li>${s}</li>`).join('')}</ul>
                             </div>
