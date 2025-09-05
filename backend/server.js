@@ -9,8 +9,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const LocalStrategy = require('passport-local').Strategy;
 const session = require('express-session');
-// --- **การแก้ไขที่สำคัญ:** เปลี่ยนชื่อ Library ที่เรียกใช้ ---
-const { PrismaSessionStore } = require('@quixo3/prisma-session-store'); 
+const { PrismaSessionStore } = require('@quixo3/prisma-session-store');
 
 // --- Initializations ---
 const app = express();
@@ -186,11 +185,77 @@ app.post('/api/logout', (req, res, next) => {
 });
 
 // API: จัดการโปรไฟล์
-app.put('/api/profile', (req, res) => { /* โค้ดโปรไฟล์ */ });
-app.post('/api/forgot-password', (req, res) => { /* โค้ดลืมรหัสผ่าน */ });
-app.post('/api/reset-password', (req, res) => { /* โค้ดรีเซ็ตรหัสผ่าน */ });
-app.use('/api/ai', createProxyMiddleware({ /* โค้ด Proxy */ }));
+app.put('/api/profile', async (req, res) => {
+    if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'กรุณาเข้าสู่ระบบก่อน' });
+    }
+    const { displayName } = req.body;
+    try {
+        const updatedUser = await prisma.user.update({
+            where: { id: req.user.id },
+            data: { displayName },
+        });
+        res.status(200).json({
+            message: 'อัปเดตโปรไฟล์สำเร็จ!',
+            user: { id: updatedUser.id, email: updatedUser.email, displayName: updatedUser.displayName, avatarUrl: updatedUser.avatarUrl },
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'เกิดข้อผิดพลาดในการอัปเดตโปรไฟล์' });
+    }
+});
 
+// API: ขอรีเซ็ตรหัสผ่าน (สำหรับ Email/Password)
+app.post('/api/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (user && user.password) {
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        const passwordResetAt = new Date(Date.now() + 10 * 60 * 1000); // 10 นาที
+        
+        await prisma.user.update({
+            where: { email },
+            data: { passwordResetToken, passwordResetAt },
+        });
+
+        const resetURL = `${frontendURL}/reset-password.html?token=${resetToken}`;
+        console.log('--- PASSWORD RESET LINK (FOR TESTING) ---');
+        console.log(resetURL);
+        console.log('-----------------------------------------');
+    }
+    res.status(200).json({ message: 'หากอีเมลของคุณมีอยู่ในระบบ เราได้ส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปให้แล้ว' });
+});
+
+// API: ตั้งรหัสผ่านใหม่
+app.post('/api/reset-password', async (req, res) => {
+    const { token, password } = req.body;
+    if(!token || !password) return res.status(400).json({error: 'ข้อมูลไม่ครบถ้วน'});
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await prisma.user.findFirst({
+        where: { passwordResetToken: hashedToken, passwordResetAt: { gt: new Date() } },
+    });
+
+    if (!user) {
+        return res.status(400).json({ error: 'Token ไม่ถูกต้องหรือหมดอายุแล้ว' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashedPassword, passwordResetToken: null, passwordResetAt: null },
+    });
+
+    res.status(200).json({ message: 'เปลี่ยนรหัสผ่านสำเร็จ! กรุณาเข้าสู่ระบบอีกครั้ง' });
+});
+
+// --- Reverse Proxy for AI Service ---
+app.use('/api/ai', createProxyMiddleware({
+    target: aiServiceURL,
+    changeOrigin: true,
+    proxyTimeout: 90000,
+    pathRewrite: { '^/api/ai': '' },
+}));
 
 // --- Serve Frontend Files & Handle SPA Routing ---
 app.use(express.static(path.join(__dirname, '../frontend')));
