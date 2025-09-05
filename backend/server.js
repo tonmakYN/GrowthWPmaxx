@@ -19,6 +19,17 @@ const PORT = process.env.PORT || 10000;
 // --- Configuration ---
 const frontendURL = "https://growthwpmaxx-backend.onrender.com";
 const aiServiceURL = process.env.AI_SERVICE_URL;
+const googleClientID = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+// --- **DEBUGGING STEP: ตรวจสอบ Environment Variables** ---
+console.log("--- INITIALIZING SERVER: CHECKING ENV VARS ---");
+console.log(`GOOGLE_CLIENT_ID loaded: ${googleClientID ? 'Yes, value starts with ' + googleClientID.substring(0, 5) : 'NO, a value was NOT FOUND'}`);
+console.log(`GOOGLE_CLIENT_SECRET loaded: ${googleClientSecret ? 'Yes, a value is present' : 'NO, a value was NOT FOUND'}`);
+console.log(`AI_SERVICE_URL loaded: ${aiServiceURL || 'NO, a value was NOT FOUND'}`);
+console.log("-------------------------------------------------");
+// --- END DEBUGGING STEP ---
+
 
 // --- Middleware ---
 app.use(cors({ origin: frontendURL, credentials: true }));
@@ -50,26 +61,35 @@ app.use(passport.session());
 
 // 1. Google Strategy
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    clientID: googleClientID,
+    clientSecret: googleClientSecret,
     callbackURL: `${frontendURL}/auth/google/callback`
   },
   async (accessToken, refreshToken, profile, done) => {
+    console.log("[Google Strategy] Callback received from Google.");
     try {
+        console.log("[Google Strategy] User profile received:", profile.displayName, profile.emails[0].value);
+        
+        console.log("[Google Strategy] Searching for user in database...");
         const user = await prisma.user.findUnique({
             where: { email: profile.emails[0].value },
         });
 
         if (user) {
+            console.log("[Google Strategy] Found existing user:", user.email);
             if (!user.googleId) {
+                console.log("[Google Strategy] Linking Google ID to existing user...");
                 const updatedUser = await prisma.user.update({
                     where: { email: profile.emails[0].value },
                     data: { googleId: profile.id, avatarUrl: profile.photos[0].value }
                 });
+                console.log("[Google Strategy] User updated. Passing to done().");
                 return done(null, updatedUser);
             }
+            console.log("[Google Strategy] User already linked. Passing to done().");
             return done(null, user);
         } else {
+            console.log("[Google Strategy] User not found. Creating new user...");
             const newUser = await prisma.user.create({
                 data: {
                     googleId: profile.id,
@@ -78,14 +98,17 @@ passport.use(new GoogleStrategy({
                     avatarUrl: profile.photos[0].value,
                 }
             });
+            console.log("[Google Strategy] New user created. Passing to done().");
             return done(null, newUser);
         }
     } catch (error) {
+        console.error("[Google Strategy] Error during database operation:", error);
         return done(error, null);
     }
   }
 ));
 
+// (ส่วนที่เหลือของโค้ดเหมือนเดิมทุกประการ)
 // 2. Local (Email/Password) Strategy
 passport.use(new LocalStrategy({ usernameField: 'email' },
     async (email, password, done) => {
@@ -109,10 +132,12 @@ passport.use(new LocalStrategy({ usernameField: 'email' },
 ));
 
 passport.serializeUser((user, done) => {
+    console.log("[Passport Serialize] Storing user ID in session:", user.id);
     done(null, user.id);
 });
 
 passport.deserializeUser(async (id, done) => {
+    console.log("[Passport Deserialize] Fetching user from session ID:", id);
     try {
         const user = await prisma.user.findUnique({ where: { id } });
         done(null, user);
@@ -161,6 +186,7 @@ app.get('/auth/google',
 app.get('/auth/google/callback', 
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
+    console.log("[Google Callback] Authentication successful. Redirecting to frontend.");
     res.redirect('/');
   }
 );
