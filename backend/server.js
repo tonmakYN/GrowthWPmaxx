@@ -7,7 +7,10 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const LocalStrategy = require('passport-local').Strategy;
 const session = require('express-session');
+// --- **การแก้ไขที่สำคัญ:** เปลี่ยนชื่อ Library ที่เรียกใช้ ---
+const { PrismaSessionStore } = require('@quixo3/prisma-session-store'); 
 
 // --- Initializations ---
 const app = express();
@@ -19,24 +22,34 @@ const frontendURL = "https://growthwpmaxx-backend.onrender.com";
 const aiServiceURL = process.env.AI_SERVICE_URL;
 
 // --- Middleware ---
-app.use(cors({ origin: frontendURL, credentials: true })); // credentials: true สำคัญสำหรับ session
+app.use(cors({ origin: frontendURL, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 
-// --- Session Middleware for Passport ---
+// --- Session Middleware (Production Ready) ---
 app.use(session({
-    secret: process.env.SESSION_SECRET, // ต้องตั้งค่านี้ใน Environment Variable
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: { 
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
-    }
+    },
+    store: new PrismaSessionStore(
+        prisma,
+        {
+            checkPeriod: 2 * 60 * 1000,
+            dbRecordIdIsSessionId: true,
+            dbRecordIdFunction: undefined,
+        }
+    )
 }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// --- Passport.js Configuration for Google Strategy ---
+// --- Passport.js Configuration ---
+
+// 1. Google Strategy
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -49,7 +62,6 @@ passport.use(new GoogleStrategy({
         });
 
         if (user) {
-            // ถ้าเจอผู้ใช้ด้วยอีเมล, อัปเดต Google ID ถ้ายังไม่มี
             if (!user.googleId) {
                 const updatedUser = await prisma.user.update({
                     where: { email: profile.emails[0].value },
@@ -59,7 +71,6 @@ passport.use(new GoogleStrategy({
             }
             return done(null, user);
         } else {
-            // ถ้าไม่เจอ, สร้างผู้ใช้ใหม่
             const newUser = await prisma.user.create({
                 data: {
                     googleId: profile.id,
@@ -74,6 +85,28 @@ passport.use(new GoogleStrategy({
         return done(error, null);
     }
   }
+));
+
+// 2. Local (Email/Password) Strategy
+passport.use(new LocalStrategy({ usernameField: 'email' },
+    async (email, password, done) => {
+        try {
+            const user = await prisma.user.findUnique({ where: { email } });
+            if (!user) {
+                return done(null, false, { message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+            }
+            if (!user.password) {
+                return done(null, false, { message: 'บัญชีนี้ถูกสร้างผ่าน Google กรุณาล็อกอินด้วย Google' });
+            }
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+            if (!isPasswordValid) {
+                return done(null, false, { message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+            }
+            return done(null, user);
+        } catch (error) {
+            return done(error);
+        }
+    }
 ));
 
 passport.serializeUser((user, done) => {
@@ -92,7 +125,7 @@ passport.deserializeUser(async (id, done) => {
 
 // --- API Routes for Users & Auth ---
 
-// API: สมัครสมาชิกด้วย Email/Password (ระบบเดิม)
+// API: สมัครสมาชิกด้วย Email/Password
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password || password.length < 6) {
@@ -110,27 +143,25 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// API: เข้าสู่ระบบด้วย Email/Password (ระบบเดิม)
+// API: เข้าสู่ระบบด้วย Email/Password (ใช้ Passport)
 app.post('/api/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
         if (err) { return next(err); }
         if (!user) { return res.status(401).json({ error: info.message }); }
         req.logIn(user, (err) => {
             if (err) { return next(err); }
-            return res.status(200).json({ message: 'เข้าสู่ระบบสำเร็จ!', user: { id: user.id, email: user.email, displayName: user.displayName } });
+            return res.status(200).json({ message: 'เข้าสู่ระบบสำเร็จ!', user: { id: user.id, email: user.email, displayName: user.displayName, avatarUrl: user.avatarUrl } });
         });
     })(req, res, next);
 });
 
-// --- **API ใหม่สำหรับ Google Sign-In** ---
+// API: Routes สำหรับ Google Sign-In
 app.get('/auth/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
-
 app.get('/auth/google/callback', 
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
-    // ล็อกอินสำเร็จ, redirect กลับไปที่หน้าหลัก
     res.redirect('/');
   }
 );
@@ -149,15 +180,16 @@ app.post('/api/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) { return next(err); }
         req.session.destroy();
+        res.clearCookie('connect.sid');
         res.status(200).json({ message: 'ออกจากระบบสำเร็จ' });
     });
 });
 
-// --- API อื่นๆ (Profile, Forgot Password, AI Proxy) ---
-app.put('/api/profile', (req, res) => { /* ... โค้ดโปรไฟล์ ... */ });
-app.post('/api/forgot-password', (req, res) => { /* ... โค้ดลืมรหัสผ่าน ... */ });
-app.post('/api/reset-password', (req, res) => { /* ... โค้ดรีเซ็ตรหัสผ่าน ... */ });
-app.use('/api/ai', createProxyMiddleware({ /* ... โค้ด Proxy ... */ }));
+// API: จัดการโปรไฟล์
+app.put('/api/profile', (req, res) => { /* โค้ดโปรไฟล์ */ });
+app.post('/api/forgot-password', (req, res) => { /* โค้ดลืมรหัสผ่าน */ });
+app.post('/api/reset-password', (req, res) => { /* โค้ดรีเซ็ตรหัสผ่าน */ });
+app.use('/api/ai', createProxyMiddleware({ /* โค้ด Proxy */ }));
 
 
 // --- Serve Frontend Files & Handle SPA Routing ---
