@@ -14,11 +14,17 @@ datasource db {
 }
 
 model User {
-  id                  Int       @id @default(autoincrement())
-  email               String    @unique
-  password            String
-  displayName         String?
-  passwordResetToken  String?   @unique // <--- เพิ่ม: สำหรับเก็บโทเค็น
-  passwordResetAt     DateTime? // <--- เพิ่ม: สำหรับเก็บวันหมดอายุของโทเค็น
-  createdAt           DateTime  @default(now())
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  displayName String?
+
+  // --- ส่วนที่เพิ่มเข้ามาสำหรับ Email Verification ---
+  isVerified        Boolean  @default(false)
+  verificationToken String?  @unique
+  // ------------------------------------------
+
+  passwordResetToken String?  @unique
+  passwordResetAt    DateTime?
+  createdAt          DateTime @default(now())
 }
