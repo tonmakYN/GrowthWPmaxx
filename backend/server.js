@@ -108,7 +108,6 @@ passport.use(new GoogleStrategy({
   }
 ));
 
-// (ส่วนที่เหลือของโค้ดเหมือนเดิมทุกประการ)
 // 2. Local (Email/Password) Strategy
 passport.use(new LocalStrategy({ usernameField: 'email' },
     async (email, password, done) => {
