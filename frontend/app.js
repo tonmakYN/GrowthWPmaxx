@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const forgotPasswordForm = document.getElementById('forgot-password-form');
     const profileForm = document.getElementById('profile-form');
     const profileDisplayNameInput = document.getElementById('profile-displayName');
-    const loginPasswordInput = document.getElementById('login-password-input'); // Element ใหม่
+    // **Elements ใหม่สำหรับฟีเจอร์ที่เพิ่ม**
+    const loginPasswordInput = document.getElementById('login-password-input');
     
     // Buttons & Links
     const showSignupLink = document.getElementById('show-signup');
@@ -26,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutButton = document.getElementById('logout-button');
     const profileButton = document.getElementById('profile-button');
     const backToDashboardButton = document.getElementById('back-to-dashboard-button');
-    const loginTogglePasswordBtn = document.getElementById('login-toggle-password-btn'); // Element ใหม่
+    const loginTogglePasswordBtn = document.getElementById('login-toggle-password-btn'); // **Element ใหม่**
 
     // Display Elements
     const signupMessage = document.getElementById('signup-message');
@@ -36,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const welcomeMessage = document.getElementById('welcome-message');
     const featureGrid = document.getElementById('feature-grid');
     const profileEmailDisplay = document.getElementById('profile-email');
-    const loginTogglePasswordIcon = document.getElementById('login-toggle-password-icon'); // Element ใหม่
+    const loginTogglePasswordIcon = document.getElementById('login-toggle-password-icon'); // **Element ใหม่**
 
     // --- Helper Functions ---
     function showView(viewId) {
@@ -53,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         element.className = `message text-center text-sm h-6 mt-2 ${type === 'success' ? 'text-success' : 'text-error'}`;
     }
 
-    // ฟังก์ชันใหม่: จัดการ Animation โหลด
+    // **ฟังก์ชันใหม่: จัดการ Animation โหลด**
     function toggleLoading(form, isLoading) {
         const button = form.querySelector('button[type="submit"]');
         if (!button) return;
@@ -98,19 +99,36 @@ document.addEventListener('DOMContentLoaded', () => {
     backToDashboardButton.addEventListener('click', (e) => { e.preventDefault(); showView('dashboard-view'); });
     logoutButton.addEventListener('click', (e) => { e.preventDefault(); updateUIForLoggedOutUser(); });
 
-    // Event Listener ใหม่: ปุ่มดูรหัสผ่าน
-    loginTogglePasswordBtn.addEventListener('click', () => {
-        const isPassword = loginPasswordInput.type === 'password';
-        loginPasswordInput.type = isPassword ? 'text' : 'password';
-        loginTogglePasswordIcon.className = `fas ${isPassword ? 'fa-eye-slash' : 'fa-eye'}`;
-    });
+    // **Event Listener ใหม่: ปุ่มดูรหัสผ่าน**
+    if (loginTogglePasswordBtn) {
+        loginTogglePasswordBtn.addEventListener('click', () => {
+            const isPassword = loginPasswordInput.type === 'password';
+            loginPasswordInput.type = isPassword ? 'text' : 'password';
+            loginTogglePasswordIcon.className = `fas ${isPassword ? 'fa-eye-slash' : 'fa-eye'}`;
+        });
+    }
 
     // การ Submit Form (Signup)
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = e.target.email.value;
         const password = e.target.password.value;
-        // ... (โค้ดส่วนนี้ทำงานถูกต้องแล้ว ไม่ต้องแก้ไข)
+        try {
+            const response = await fetch(`${backendUrl}/api/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+            const data = await response.json();
+            if (response.ok) {
+                displayMessage(signupMessage, data.message, 'success');
+                setTimeout(() => showView('login-view'), 2000);
+            } else {
+                displayMessage(signupMessage, data.error, 'error');
+            }
+        } catch (err) {
+            displayMessage(signupMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+        }
     });
 
     // การ Submit Form (Login) - แก้ไข Bug และเพิ่ม Feature
@@ -146,13 +164,42 @@ document.addEventListener('DOMContentLoaded', () => {
     // การ Submit Form (Forgot Password)
     forgotPasswordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        // ... (โค้ดส่วนนี้ทำงานถูกต้องแล้ว ไม่ต้องแก้ไข)
+        const email = e.target.email.value;
+        try {
+            const response = await fetch(`${backendUrl}/api/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+            const data = await response.json();
+            displayMessage(forgotPasswordMessage, data.message, 'success');
+        } catch (err) {
+            displayMessage(forgotPasswordMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+        }
     });
 
     // การ Submit Form (Profile)
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        // ... (โค้ดส่วนนี้ทำงานถูกต้องแล้ว ไม่ต้องแก้ไข)
+        const displayName = profileDisplayNameInput.value;
+        try {
+            const response = await fetch(`${backendUrl}/api/profile`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ displayName }),
+                credentials: 'include'
+            });
+            const data = await response.json();
+            if(response.ok) {
+                updateUIForLoggedInUser(data.user);
+                displayMessage(profileMessage, 'บันทึกข้อมูลสำเร็จ!', 'success');
+                setTimeout(() => showView('dashboard-view'), 1500);
+            } else {
+                displayMessage(profileMessage, data.error, 'error');
+            }
+        } catch(err) {
+            displayMessage(profileMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+        }
     });
     
     // การคลิก Feature Card
@@ -161,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (card) {
             const feature = card.dataset.feature;
             if (feature === 'face-analysis') {
-                window.location.href = '/face-analysis.html';
+                window.location.href = '/face-analysis';
             } else {
                 alert(`คุณเลือกฟีเจอร์: ${feature} (ยังไม่ได้พัฒนา)`);
             }
