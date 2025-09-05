@@ -52,7 +52,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UI Update Logic ---
     function updateUIForLoggedInUser(user) {
-        if (!user) return;
+        if (!user) {
+            updateUIForLoggedOutUser();
+            return;
+        };
         localStorage.setItem('currentUser', JSON.stringify(user));
         
         welcomeMessage.textContent = `ยินดีต้อนรับ, ${user.displayName || user.email}!`;
@@ -63,11 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateUIForLoggedOutUser() {
         localStorage.removeItem('currentUser');
-        // ส่งคำขอ POST ไปยัง /api/logout เพื่อทำลาย session ที่เซิร์ฟเวอร์
         fetch(`${backendUrl}/api/logout`, { 
             method: 'POST',
-            // headers for credentials might be needed if your CORS is strict
-            // credentials: 'include' 
+            credentials: 'include' 
         }); 
         showView('login-view');
     }
@@ -112,10 +113,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
+                credentials: 'include'
             });
             const data = await response.json();
             if (response.ok) {
-                updateUIForLoggedInUser(data.user);
+                await initialize();
             } else {
                 displayMessage(loginMessage, data.error, 'error');
             }
@@ -143,13 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const displayName = profileDisplayNameInput.value;
-        const user = JSON.parse(localStorage.getItem('currentUser'));
-
         try {
             const response = await fetch(`${backendUrl}/api/profile`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ displayName }), // Passport session knows who the user is
+                body: JSON.stringify({ displayName }),
+                credentials: 'include'
             });
             const data = await response.json();
             if(response.ok) {
@@ -176,27 +177,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- **การเปลี่ยนแปลงที่สำคัญที่สุด** ---
-    // Initialization: ตรวจสอบสถานะการล็อกอินกับเซิร์ฟเวอร์ทุกครั้งที่โหลดหน้า
+    // --- Initialization ---
     async function initialize() {
         try {
-            const response = await fetch(`${backendUrl}/api/current_user`);
+            const response = await fetch(`${backendUrl}/api/current_user`, {
+                credentials: 'include'
+            });
+            
             if (response.ok) {
                 const user = await response.json();
                 if (user) {
-                    // ถ้าเซิร์ฟเวอร์บอกว่ามีคนล็อกอินอยู่ ให้แสดงหน้า Dashboard
                     updateUIForLoggedInUser(user);
                 } else {
-                    // ถ้าไม่มี session ที่เซิร์ฟเวอร์ ให้แสดงหน้า Login
                     updateUIForLoggedOutUser();
                 }
             } else {
-                // ถ้า API ตอบกลับมาเป็น Error (เช่น 401) ให้แสดงหน้า Login
                 updateUIForLoggedOutUser();
             }
         } catch (error) {
-            // ถ้าเชื่อมต่อ Backend ไม่ได้เลย ให้แสดงหน้า Login
-            console.error("Could not connect to backend to check auth status", error);
+            console.error("Could not fetch auth status", error);
             updateUIForLoggedOutUser();
         }
     }
