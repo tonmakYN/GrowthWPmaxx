@@ -10,12 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileView = document.getElementById('profile-view');
     const allViews = [loginView, signupView, forgotPasswordView, dashboardView, profileView];
 
+    // Forms & Inputs
     const signupForm = document.getElementById('signup-form');
     const loginForm = document.getElementById('login-form');
     const forgotPasswordForm = document.getElementById('forgot-password-form');
     const profileForm = document.getElementById('profile-form');
     const profileDisplayNameInput = document.getElementById('profile-displayName');
     
+    // Buttons & Links
     const showSignupLink = document.getElementById('show-signup');
     const showLoginLinkFromSignup = document.getElementById('show-login-from-signup');
     const showLoginLinkFromForgot = document.getElementById('show-login-from-forgot');
@@ -24,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileButton = document.getElementById('profile-button');
     const backToDashboardButton = document.getElementById('back-to-dashboard-button');
 
+    // Display Elements
     const signupMessage = document.getElementById('signup-message');
     const loginMessage = document.getElementById('login-message');
     const forgotPasswordMessage = document.getElementById('forgot-password-message');
@@ -44,24 +47,28 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayMessage(element, message, type) {
         if (!element) return;
         element.textContent = message;
-        element.className = `message ${type}`;
+        element.className = `message text-center text-sm h-6 mt-2 ${type === 'success' ? 'text-success' : 'text-error'}`;
     }
 
     // --- UI Update Logic ---
-    function updateUIForLoggedInUser() {
-        const user = JSON.parse(localStorage.getItem('currentUser'));
-        if (user) {
-            welcomeMessage.textContent = `ยินดีต้อนรับ, ${user.displayName || user.email}!`;
-            profileEmailDisplay.textContent = user.email;
-            profileDisplayNameInput.value = user.displayName || '';
-            showView('dashboard-view');
-        } else {
-            updateUIForLoggedOutUser();
-        }
+    function updateUIForLoggedInUser(user) {
+        if (!user) return;
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        
+        welcomeMessage.textContent = `ยินดีต้อนรับ, ${user.displayName || user.email}!`;
+        profileEmailDisplay.textContent = user.email;
+        profileDisplayNameInput.value = user.displayName || '';
+        showView('dashboard-view');
     }
 
     function updateUIForLoggedOutUser() {
         localStorage.removeItem('currentUser');
+        // ส่งคำขอ POST ไปยัง /api/logout เพื่อทำลาย session ที่เซิร์ฟเวอร์
+        fetch(`${backendUrl}/api/logout`, { 
+            method: 'POST',
+            // headers for credentials might be needed if your CORS is strict
+            // credentials: 'include' 
+        }); 
         showView('login-view');
     }
 
@@ -108,8 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await response.json();
             if (response.ok) {
-                localStorage.setItem('currentUser', JSON.stringify(data.user));
-                updateUIForLoggedInUser();
+                updateUIForLoggedInUser(data.user);
             } else {
                 displayMessage(loginMessage, data.error, 'error');
             }
@@ -143,13 +149,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${backendUrl}/api/profile`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: user.email, displayName }),
+                body: JSON.stringify({ displayName }), // Passport session knows who the user is
             });
             const data = await response.json();
             if(response.ok) {
-                localStorage.setItem('currentUser', JSON.stringify(data.user));
+                updateUIForLoggedInUser(data.user);
                 displayMessage(profileMessage, 'บันทึกข้อมูลสำเร็จ!', 'success');
-                welcomeMessage.textContent = `ยินดีต้อนรับ, ${data.user.displayName || data.user.email}!`;
                 setTimeout(() => showView('dashboard-view'), 1500);
             } else {
                 displayMessage(profileMessage, data.error, 'error');
@@ -166,17 +171,33 @@ document.addEventListener('DOMContentLoaded', () => {
             if (feature === 'face-analysis') {
                 window.location.href = '/face-analysis';
             } else {
-                alert(`คุณเลือกฟีเจอร์: ${feature}`);
+                alert(`คุณเลือกฟีเจอร์: ${feature} (ยังไม่ได้พัฒนา)`);
             }
         }
     });
 
-    // --- Initialization ---
-    function initialize() {
-        if (localStorage.getItem('currentUser')) {
-            updateUIForLoggedInUser();
-        } else {
-            showView('login-view');
+    // --- **การเปลี่ยนแปลงที่สำคัญที่สุด** ---
+    // Initialization: ตรวจสอบสถานะการล็อกอินกับเซิร์ฟเวอร์ทุกครั้งที่โหลดหน้า
+    async function initialize() {
+        try {
+            const response = await fetch(`${backendUrl}/api/current_user`);
+            if (response.ok) {
+                const user = await response.json();
+                if (user) {
+                    // ถ้าเซิร์ฟเวอร์บอกว่ามีคนล็อกอินอยู่ ให้แสดงหน้า Dashboard
+                    updateUIForLoggedInUser(user);
+                } else {
+                    // ถ้าไม่มี session ที่เซิร์ฟเวอร์ ให้แสดงหน้า Login
+                    updateUIForLoggedOutUser();
+                }
+            } else {
+                // ถ้า API ตอบกลับมาเป็น Error (เช่น 401) ให้แสดงหน้า Login
+                updateUIForLoggedOutUser();
+            }
+        } catch (error) {
+            // ถ้าเชื่อมต่อ Backend ไม่ได้เลย ให้แสดงหน้า Login
+            console.error("Could not connect to backend to check auth status", error);
+            updateUIForLoggedOutUser();
         }
     }
 
