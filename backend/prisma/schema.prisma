@@ -1,3 +1,5 @@
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,17 +12,22 @@ datasource db {
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
-  password  String?  // Password is optional for Google Sign-In
+  password  String?
   
   displayName String?
   avatarUrl   String?
   googleId    String?  @unique
   
-  // --- ลบส่วน Email Verification เดิมออกไปแล้ว ---
-
-  // --- ส่วนสำหรับ Password Reset ยังคงอยู่ ---
   passwordResetToken String?  @unique
   passwordResetAt    DateTime?
   
   createdAt          DateTime @default(now())
+}
+
+// --- **ส่วนที่เพิ่มเข้ามาสำหรับเก็บข้อมูล Session** ---
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
 }
