@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const backendUrl = 'https://growthwpmaxx-backend.onrender.com'; // relative path, backend และ frontend อยู่เดียวกัน
+    const backendUrl = ''; // เนื่องจาก backend + frontend อยู่ใน service เดียวกัน
 
+    // --- DOM Elements ---
     const loginView = document.getElementById('login-view');
     const signupView = document.getElementById('signup-view');
     const forgotPasswordView = document.getElementById('forgot-password-view');
@@ -12,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const forgotPasswordForm = document.getElementById('forgot-password-form');
     const profileForm = document.getElementById('profile-form');
+
     const profileDisplayNameInput = document.getElementById('profile-displayName');
     const loginPasswordInput = document.getElementById('login-password-input');
 
@@ -34,17 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginTogglePasswordIcon = document.getElementById('login-toggle-password-icon');
 
     function showView(viewId) {
-        allViews.forEach(view => {
-            if (view) view.style.display = 'none';
-        });
-        const activeView = document.getElementById(viewId);
-        if (activeView) activeView.style.display = 'block';
+        allViews.forEach(v => { if (v) v.style.display = 'none'; });
+        const active = document.getElementById(viewId);
+        if (active) active.style.display = 'block';
     }
 
-    function displayMessage(element, message, type) {
-        if (!element) return;
-        element.textContent = message;
-        element.className = `message text-center text-sm h-6 mt-2 ${type === 'success' ? 'text-success' : 'text-error'}`;
+    function displayMessage(el, msg, type) {
+        if (!el) return;
+        el.textContent = msg;
+        el.className = `message text-center text-sm h-6 mt-2 ${type === 'success' ? 'text-success' : 'text-error'}`;
     }
 
     function toggleLoading(form, isLoading) {
@@ -52,7 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!button) return;
         const text = button.querySelector('.login-text');
         const loader = button.querySelector('.login-loader');
-        
         if (isLoading) {
             button.disabled = true;
             if (text) text.style.display = 'none';
@@ -95,23 +94,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Forms ---
     signupForm.addEventListener('submit', async e => {
         e.preventDefault();
         const email = e.target.email.value;
         const password = e.target.password.value;
         try {
-            const response = await fetch(`${backendUrl}/api/register`, {
+            const res = await fetch(`${backendUrl}/api/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
+                credentials: 'include'
             });
-            const data = await response.json();
-            if (response.ok) {
+            const data = await res.json();
+            if (res.ok) {
                 displayMessage(signupMessage, data.message, 'success');
-                setTimeout(() => showView('login-view'), 2000);
-            } else {
-                displayMessage(signupMessage, data.error, 'error');
-            }
+                setTimeout(() => showView('login-view'), 1500);
+            } else displayMessage(signupMessage, data.error, 'error');
         } catch {
             displayMessage(signupMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
         }
@@ -121,23 +120,18 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         displayMessage(loginMessage, '', '');
         toggleLoading(loginForm, true);
-
         const email = e.target.email.value;
         const password = e.target.password.value;
-        
         try {
-            const response = await fetch(`${backendUrl}/api/login`, {
+            const res = await fetch(`${backendUrl}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
                 credentials: 'include'
             });
-            const data = await response.json();
-            if (response.ok) {
-                updateUIForLoggedInUser(data.user);
-            } else {
-                displayMessage(loginMessage, data.error, 'error');
-            }
+            const data = await res.json();
+            if (res.ok) updateUIForLoggedInUser(data.user);
+            else displayMessage(loginMessage, data.error, 'error');
         } catch {
             displayMessage(loginMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
         } finally {
@@ -149,12 +143,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const email = e.target.email.value;
         try {
-            const response = await fetch(`${backendUrl}/api/forgot-password`, {
+            const res = await fetch(`${backendUrl}/api/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
             });
-            const data = await response.json();
+            const data = await res.json();
             displayMessage(forgotPasswordMessage, data.message, 'success');
         } catch {
             displayMessage(forgotPasswordMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
@@ -165,20 +159,18 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const displayName = profileDisplayNameInput.value;
         try {
-            const response = await fetch(`${backendUrl}/api/profile`, {
+            const res = await fetch(`${backendUrl}/api/profile`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ displayName }),
                 credentials: 'include'
             });
-            const data = await response.json();
-            if(response.ok) {
+            const data = await res.json();
+            if (res.ok) {
                 updateUIForLoggedInUser(data.user);
                 displayMessage(profileMessage, 'บันทึกข้อมูลสำเร็จ!', 'success');
                 setTimeout(() => showView('dashboard-view'), 1500);
-            } else {
-                displayMessage(profileMessage, data.error, 'error');
-            }
+            } else displayMessage(profileMessage, data.error, 'error');
         } catch {
             displayMessage(profileMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
         }
@@ -186,38 +178,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     featureGrid.addEventListener('click', e => {
         const card = e.target.closest('.card');
-        if (card) {
-            const feature = card.dataset.feature;
-            if (feature === 'face-analysis') {
-                // SPA style redirect แทน full page reload
-                fetch(`${backendUrl}/api/feature/face-analysis`, { credentials: 'include' })
-                    .then(res => {
-                        if (res.ok) window.location.href = '/face-analysis';
-                        else alert('คุณต้องเข้าสู่ระบบก่อน');
-                    })
-                    .catch(() => alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'));
-            } else {
-                alert(`คุณเลือกฟีเจอร์: ${feature} (ยังไม่ได้พัฒนา)`);
-            }
-        }
+        if (!card) return;
+        const feature = card.dataset.feature;
+        if (feature === 'face-analysis') window.location.href = '/face-analysis';
+        else alert(`คุณเลือกฟีเจอร์: ${feature} (ยังไม่ได้พัฒนา)`);
     });
 
-    // Google login button
-    const googleLoginButton = document.querySelector('a[href="/auth/google"]');
-    if (googleLoginButton) {
-        googleLoginButton.addEventListener('click', e => {
+    // --- Google OAuth ---
+    const googleBtn = document.querySelector('a[href="/auth/google"]');
+    if (googleBtn) {
+        googleBtn.addEventListener('click', e => {
             e.preventDefault();
             window.location.href = `${backendUrl}/auth/google`;
         });
     }
 
+    // --- Init: check current user ---
     async function initialize() {
         try {
-            const response = await fetch(`${backendUrl}/api/current_user`, {
-                credentials: 'include'
-            });
-            if (response.ok) {
-                const user = await response.json();
+            const res = await fetch(`${backendUrl}/api/current_user`, { credentials: 'include' });
+            if (res.ok) {
+                const user = await res.json();
                 if (user) updateUIForLoggedInUser(user);
                 else showView('login-view');
             } else showView('login-view');
