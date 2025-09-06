@@ -1,8 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // เนื่องจาก Frontend และ Backend อยู่บนเซิร์ฟเวอร์เดียวกันแล้ว เราจึงใช้ relative path ได้เลย
-    const backendUrl = ''; 
+    const backendUrl = 'https://growthwpmaxx-backend.onrender.com'; // relative path, backend และ frontend อยู่เดียวกัน
 
-    // --- DOM Elements ---
     const loginView = document.getElementById('login-view');
     const signupView = document.getElementById('signup-view');
     const forgotPasswordView = document.getElementById('forgot-password-view');
@@ -10,15 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileView = document.getElementById('profile-view');
     const allViews = [loginView, signupView, forgotPasswordView, dashboardView, profileView];
 
-    // Forms & Inputs
     const signupForm = document.getElementById('signup-form');
     const loginForm = document.getElementById('login-form');
     const forgotPasswordForm = document.getElementById('forgot-password-form');
     const profileForm = document.getElementById('profile-form');
     const profileDisplayNameInput = document.getElementById('profile-displayName');
     const loginPasswordInput = document.getElementById('login-password-input');
-    
-    // Buttons & Links
+
     const showSignupLink = document.getElementById('show-signup');
     const showLoginLinkFromSignup = document.getElementById('show-login-from-signup');
     const showLoginLinkFromForgot = document.getElementById('show-login-from-forgot');
@@ -28,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const backToDashboardButton = document.getElementById('back-to-dashboard-button');
     const loginTogglePasswordBtn = document.getElementById('login-toggle-password-btn');
 
-    // Display Elements
     const signupMessage = document.getElementById('signup-message');
     const loginMessage = document.getElementById('login-message');
     const forgotPasswordMessage = document.getElementById('forgot-password-message');
@@ -38,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileEmailDisplay = document.getElementById('profile-email');
     const loginTogglePasswordIcon = document.getElementById('login-toggle-password-icon');
 
-    // --- Helper Functions ---
     function showView(viewId) {
         allViews.forEach(view => {
             if (view) view.style.display = 'none';
@@ -70,11 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- UI Update Logic ---
     function updateUIForLoggedInUser(user) {
-        if (!user) {
-            return updateUIForLoggedOutUser();
-        }
+        if (!user) return updateUIForLoggedOutUser();
         localStorage.setItem('currentUser', JSON.stringify(user));
         welcomeMessage.textContent = `ยินดีต้อนรับ, ${user.displayName || user.email}!`;
         profileEmailDisplay.textContent = user.email;
@@ -84,18 +75,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateUIForLoggedOutUser() {
         localStorage.removeItem('currentUser');
-        fetch(`${backendUrl}/api/logout`, { method: 'POST', credentials: 'include' }); 
+        fetch(`${backendUrl}/api/logout`, { method: 'POST', credentials: 'include' });
         showView('login-view');
     }
 
-    // --- Event Listeners ---
-    showSignupLink.addEventListener('click', (e) => { e.preventDefault(); showView('signup-view'); });
-    showLoginLinkFromSignup.addEventListener('click', (e) => { e.preventDefault(); showView('login-view'); });
-    showForgotPasswordLink.addEventListener('click', (e) => { e.preventDefault(); showView('forgot-password-view'); });
-    showLoginLinkFromForgot.addEventListener('click', (e) => { e.preventDefault(); showView('login-view'); });
-    profileButton.addEventListener('click', (e) => { e.preventDefault(); showView('profile-view'); });
-    backToDashboardButton.addEventListener('click', (e) => { e.preventDefault(); showView('dashboard-view'); });
-    logoutButton.addEventListener('click', (e) => { e.preventDefault(); updateUIForLoggedOutUser(); });
+    showSignupLink.addEventListener('click', e => { e.preventDefault(); showView('signup-view'); });
+    showLoginLinkFromSignup.addEventListener('click', e => { e.preventDefault(); showView('login-view'); });
+    showForgotPasswordLink.addEventListener('click', e => { e.preventDefault(); showView('forgot-password-view'); });
+    showLoginLinkFromForgot.addEventListener('click', e => { e.preventDefault(); showView('login-view'); });
+    profileButton.addEventListener('click', e => { e.preventDefault(); showView('profile-view'); });
+    backToDashboardButton.addEventListener('click', e => { e.preventDefault(); showView('dashboard-view'); });
+    logoutButton.addEventListener('click', e => { e.preventDefault(); updateUIForLoggedOutUser(); });
 
     if (loginTogglePasswordBtn) {
         loginTogglePasswordBtn.addEventListener('click', () => {
@@ -105,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    signupForm.addEventListener('submit', async (e) => {
+    signupForm.addEventListener('submit', async e => {
         e.preventDefault();
         const email = e.target.email.value;
         const password = e.target.password.value;
@@ -122,12 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 displayMessage(signupMessage, data.error, 'error');
             }
-        } catch (err) {
+        } catch {
             displayMessage(signupMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
         }
     });
 
-    loginForm.addEventListener('submit', async (e) => {
+    loginForm.addEventListener('submit', async e => {
         e.preventDefault();
         displayMessage(loginMessage, '', '');
         toggleLoading(loginForm, true);
@@ -148,14 +138,14 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 displayMessage(loginMessage, data.error, 'error');
             }
-        } catch (err) {
+        } catch {
             displayMessage(loginMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
         } finally {
             toggleLoading(loginForm, false);
         }
     });
 
-    forgotPasswordForm.addEventListener('submit', async (e) => {
+    forgotPasswordForm.addEventListener('submit', async e => {
         e.preventDefault();
         const email = e.target.email.value;
         try {
@@ -166,12 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await response.json();
             displayMessage(forgotPasswordMessage, data.message, 'success');
-        } catch (err) {
+        } catch {
             displayMessage(forgotPasswordMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
         }
     });
 
-    profileForm.addEventListener('submit', async (e) => {
+    profileForm.addEventListener('submit', async e => {
         e.preventDefault();
         const displayName = profileDisplayNameInput.value;
         try {
@@ -189,24 +179,38 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 displayMessage(profileMessage, data.error, 'error');
             }
-        } catch(err) {
+        } catch {
             displayMessage(profileMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
         }
     });
-    
-    featureGrid.addEventListener('click', (e) => {
+
+    featureGrid.addEventListener('click', e => {
         const card = e.target.closest('.card');
         if (card) {
             const feature = card.dataset.feature;
             if (feature === 'face-analysis') {
-                window.location.href = '/face-analysis';
+                // SPA style redirect แทน full page reload
+                fetch(`${backendUrl}/api/feature/face-analysis`, { credentials: 'include' })
+                    .then(res => {
+                        if (res.ok) window.location.href = '/face-analysis';
+                        else alert('คุณต้องเข้าสู่ระบบก่อน');
+                    })
+                    .catch(() => alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'));
             } else {
                 alert(`คุณเลือกฟีเจอร์: ${feature} (ยังไม่ได้พัฒนา)`);
             }
         }
     });
 
-    // --- Initialization ---
+    // Google login button
+    const googleLoginButton = document.querySelector('a[href="/auth/google"]');
+    if (googleLoginButton) {
+        googleLoginButton.addEventListener('click', e => {
+            e.preventDefault();
+            window.location.href = `${backendUrl}/auth/google`;
+        });
+    }
+
     async function initialize() {
         try {
             const response = await fetch(`${backendUrl}/api/current_user`, {
@@ -214,16 +218,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (response.ok) {
                 const user = await response.json();
-                if (user) {
-                    updateUIForLoggedInUser(user);
-                } else {
-                    showView('login-view');
-                }
-            } else {
-                showView('login-view');
-            }
-        } catch (error) {
-            console.error("Could not fetch auth status", error);
+                if (user) updateUIForLoggedInUser(user);
+                else showView('login-view');
+            } else showView('login-view');
+        } catch {
             showView('login-view');
         }
     }
