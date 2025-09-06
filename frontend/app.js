@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const forgotPasswordForm = document.getElementById('forgot-password-form');
     const profileForm = document.getElementById('profile-form');
     const profileDisplayNameInput = document.getElementById('profile-displayName');
-    // **Elements ใหม่สำหรับฟีเจอร์ที่เพิ่ม**
     const loginPasswordInput = document.getElementById('login-password-input');
     
     // Buttons & Links
@@ -27,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutButton = document.getElementById('logout-button');
     const profileButton = document.getElementById('profile-button');
     const backToDashboardButton = document.getElementById('back-to-dashboard-button');
-    const loginTogglePasswordBtn = document.getElementById('login-toggle-password-btn'); // **Element ใหม่**
+    const loginTogglePasswordBtn = document.getElementById('login-toggle-password-btn');
 
     // Display Elements
     const signupMessage = document.getElementById('signup-message');
@@ -37,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const welcomeMessage = document.getElementById('welcome-message');
     const featureGrid = document.getElementById('feature-grid');
     const profileEmailDisplay = document.getElementById('profile-email');
-    const loginTogglePasswordIcon = document.getElementById('login-toggle-password-icon'); // **Element ใหม่**
+    const loginTogglePasswordIcon = document.getElementById('login-toggle-password-icon');
 
     // --- Helper Functions ---
     function showView(viewId) {
@@ -54,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
         element.className = `message text-center text-sm h-6 mt-2 ${type === 'success' ? 'text-success' : 'text-error'}`;
     }
 
-    // **ฟังก์ชันใหม่: จัดการ Animation โหลด**
     function toggleLoading(form, isLoading) {
         const button = form.querySelector('button[type="submit"]');
         if (!button) return;
@@ -99,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
     backToDashboardButton.addEventListener('click', (e) => { e.preventDefault(); showView('dashboard-view'); });
     logoutButton.addEventListener('click', (e) => { e.preventDefault(); updateUIForLoggedOutUser(); });
 
-    // **Event Listener ใหม่: ปุ่มดูรหัสผ่าน**
     if (loginTogglePasswordBtn) {
         loginTogglePasswordBtn.addEventListener('click', () => {
             const isPassword = loginPasswordInput.type === 'password';
@@ -108,7 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // การ Submit Form (Signup)
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = e.target.email.value;
@@ -131,11 +127,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // การ Submit Form (Login) - แก้ไข Bug และเพิ่ม Feature
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         displayMessage(loginMessage, '', '');
-        toggleLoading(loginForm, true); // <--- เริ่ม Animation
+        toggleLoading(loginForm, true);
 
         const email = e.target.email.value;
         const password = e.target.password.value;
@@ -149,7 +144,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await response.json();
             if (response.ok) {
-                // **แก้ไข Bug:** เรียก updateUIForLoggedInUser โดยตรง ไม่ต้องเรียก initialize() ซ้ำ
                 updateUIForLoggedInUser(data.user);
             } else {
                 displayMessage(loginMessage, data.error, 'error');
@@ -157,11 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             displayMessage(loginMessage, 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
         } finally {
-            toggleLoading(loginForm, false); // <--- หยุด Animation เสมอไม่ว่าจะสำเร็จหรือล้มเหลว
+            toggleLoading(loginForm, false);
         }
     });
 
-    // การ Submit Form (Forgot Password)
     forgotPasswordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = e.target.email.value;
@@ -178,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // การ Submit Form (Profile)
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const displayName = profileDisplayNameInput.value;
@@ -202,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // การคลิก Feature Card
     featureGrid.addEventListener('click', (e) => {
         const card = e.target.closest('.card');
         if (card) {
